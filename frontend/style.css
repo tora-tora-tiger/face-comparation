@@ -101,8 +101,13 @@ canvas {
     height: auto;
     border: 2px solid #3498db;
     border-radius: 5px;
-    cursor: crosshair;
+    cursor: default;
     margin-top: 10px;
+}
+
+/* 処理済み画像のcanvasは特徴点機能あり */
+.processed-image-container canvas {
+    cursor: crosshair;
 }
 
 /* 特徴点マーキングセクション */
@@ -130,6 +135,34 @@ canvas {
     border: 2px solid #ddd;
     border-radius: 5px;
     font-size: 1em;
+}
+
+.marking-instructions {
+    background-color: #e8f5e8;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 4px solid #27ae60;
+    margin-bottom: 20px;
+}
+
+.marking-instructions h4 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+.marking-instructions ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.marking-instructions li {
+    margin-bottom: 5px;
+    color: #2c3e50;
+}
+
+.marking-instructions strong {
+    color: #27ae60;
 }
 
 .feature-points-info {

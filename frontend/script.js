@@ -8,6 +8,17 @@ const imageData = {
 let currentFeatureType = 'rightEye';
 let faceDetectionResults = {};
 
+// ドラッグ操作用の変数
+let dragState = {
+    isDragging: false,
+    draggedPoint: null,
+    draggedPointIndex: -1,
+    draggedImageType: null,
+    draggedIsProcessed: false,
+    startX: 0,
+    startY: 0
+};
+
 // DOM要素の取得
 const fileInputs = {
     reference: document.getElementById('file-reference'),
@@ -44,10 +55,8 @@ function setupEventListeners() {
         fileInputs[key].addEventListener('change', (e) => handleFileSelect(e, key));
     });
 
-    // Canvas クリックイベント
-    Object.keys(canvases).forEach(key => {
-        canvases[key].addEventListener('click', (e) => handleCanvasClick(e, key));
-    });
+    // Canvas イベント（前処理前の画像では特徴点機能を無効化）
+    // 特徴点は処理済み画像でのみ使用可能
 
     // ドラッグ&ドロップ
     setupDragAndDrop();
@@ -169,8 +178,7 @@ function displayImageOnCanvas(file, imageType) {
             canvas.style.display = 'block';
             uploadArea.style.display = 'none';
 
-            // 既存の特徴点を再描画
-            redrawFeaturePoints(imageType);
+            // 前処理前の画像では特徴点は使用しない
         };
         img.src = e.target.result;
     };
@@ -217,20 +225,22 @@ function drawFeaturePoint(canvas, point) {
         other: '#95a5a6'
     };
 
-    // 点を描画
+    // 点を描画（半径を10から50に拡大 = 5倍）
     ctx.fillStyle = colors[point.type] || colors.other;
     ctx.strokeStyle = 'white';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 8;
     
     ctx.beginPath();
-    ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
+    ctx.arc(point.x, point.y, 50, 0, 2 * Math.PI);
     ctx.fill();
     ctx.stroke();
 
-    // ラベルを描画
+    // ラベルを描画（フォントサイズも5倍に拡大）
     ctx.fillStyle = '#2c3e50';
-    ctx.font = '12px Arial';
-    ctx.fillText(point.label, point.x + 10, point.y - 5);
+    ctx.font = 'bold 30px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(point.label, point.x, point.y);
 }
 
 function redrawFeaturePoints(imageType, isProcessed = false) {
@@ -277,9 +287,9 @@ function clearAllPoints() {
     Object.keys(imageData).forEach(imageType => {
         imageData[imageType].points = [];
         
-        // Canvas を再描画（画像のみ）
-        if (imageData[imageType].file) {
-            displayImageOnCanvas(imageData[imageType].file, imageType);
+        // 処理済み画像のCanvas を再描画
+        if (imageData[imageType].processedImage) {
+            redrawAllCanvas(imageType, true);
         }
         
         // サーバーの特徴点データも更新
@@ -405,6 +415,64 @@ function getFeatureTypeLabel(type) {
     return labels[type] || 'その他';
 }
 
+// 特徴点のヒットテスト（クリック位置が特徴点の範囲内かチェック）
+function hitTestFeaturePoint(x, y, point, radius = 55) {
+    const dx = x - point.x;
+    const dy = y - point.y;
+    return Math.sqrt(dx * dx + dy * dy) <= radius;
+}
+
+// 座標変換関数
+function getCanvasCoordinates(event, canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+    
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    return {
+        x: clickX * scaleX,
+        y: clickY * scaleY
+    };
+}
+
+// Canvas全体を再描画する関数（処理済み画像のみ）
+function redrawAllCanvas(imageType, isProcessed) {
+    // 処理済み画像のみ対応
+    if (!isProcessed) return;
+    
+    const canvas = document.getElementById(`processed-canvas-${imageType}`);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // 処理済み画像の場合、元の画像を再描画
+    if (imageData[imageType].processedImage) {
+        const img = new Image();
+        img.onload = function() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            redrawFeaturePoints(imageType, true);
+        };
+        img.src = imageData[imageType].processedImage;
+    }
+}
+
+// 特徴点のラベルを再番号付けする関数
+function relabelFeaturePoints(imageType) {
+    const points = imageData[imageType].points;
+    const typeCounts = {};
+    
+    points.forEach(point => {
+        if (!typeCounts[point.type]) {
+            typeCounts[point.type] = 0;
+        }
+        typeCounts[point.type]++;
+        point.label = `${getFeatureTypeLabel(point.type)}_${typeCounts[point.type]}`;
+    });
+}
+
 // 顔検出機能
 async function processFaceDetection() {
     // ローディング表示
@@ -486,9 +554,12 @@ function displayProcessedImage(imageType, base64Image) {
             // 既存の特徴点を再描画
             redrawFeaturePoints(imageType, true);
             
-            // 処理済み画像のキャンバスにクリックイベントを追加（重複防止）
+            // 処理済み画像のキャンバスにイベントリスナーを追加（重複防止）
             if (!canvas.hasProcessedClickListener) {
-                canvas.addEventListener('click', (e) => handleProcessedCanvasClick(e, imageType));
+                canvas.addEventListener('mousedown', (e) => handleProcessedCanvasMouseDown(e, imageType));
+                canvas.addEventListener('mousemove', (e) => handleProcessedCanvasMouseMove(e, imageType));
+                canvas.addEventListener('mouseup', (e) => handleProcessedCanvasMouseUp(e, imageType));
+                canvas.addEventListener('contextmenu', (e) => handleProcessedCanvasRightClick(e, imageType));
                 canvas.hasProcessedClickListener = true;
             }
         };
@@ -538,79 +609,109 @@ function displayDetectionInfo(detectionResults) {
     detectionDetails.innerHTML = infoHtml;
 }
 
-// 処理済み画像用のキャンバスクリックハンドラー
-function handleProcessedCanvasClick(event, imageType) {
-    const targetImageData = imageData[imageType];
+// 処理済み画像用のマウスダウンハンドラー
+function handleProcessedCanvasMouseDown(event, imageType) {
+    event.preventDefault();
     
+    const targetImageData = imageData[imageType];
     if (!targetImageData.id) return;
 
     const canvas = document.getElementById(`processed-canvas-${imageType}`);
-    
-    const rect = canvas.getBoundingClientRect();
-    const clickX = event.clientX - rect.left;
-    const clickY = event.clientY - rect.top;
+    const coords = getCanvasCoordinates(event, canvas);
 
-    // Canvas の表示サイズと実際のサイズの比率を計算
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    // 既存の特徴点をチェック
+    for (let i = targetImageData.points.length - 1; i >= 0; i--) {
+        const point = targetImageData.points[i];
+        if (hitTestFeaturePoint(coords.x, coords.y, point)) {
+            // 特徴点をドラッグ開始
+            dragState.isDragging = true;
+            dragState.draggedPoint = point;
+            dragState.draggedPointIndex = i;
+            dragState.draggedImageType = imageType;
+            dragState.draggedIsProcessed = true;
+            dragState.startX = coords.x;
+            dragState.startY = coords.y;
+            return;
+        }
+    }
 
-    // 実際のcanvas座標に変換
-    const x = clickX * scaleX;
-    const y = clickY * scaleY;
-
-    // 特徴点を追加
+    // 特徴点がない場所をクリック - 新しい特徴点を追加
     const point = {
-        x: x,
-        y: y,
+        x: coords.x,
+        y: coords.y,
         type: currentFeatureType,
         label: `${getFeatureTypeLabel(currentFeatureType)}_${targetImageData.points.length + 1}`
     };
 
     targetImageData.points.push(point);
-
-    // 特徴点を描画
-    drawFeaturePoint(canvas, point);
-
-    // 特徴点データをサーバーに送信
+    
+    // Canvas全体を再描画
+    redrawAllCanvas(imageType, true);
+    
     saveFeaturePoints(imageType);
-
-    // UI更新
     updateUI();
 }
 
-// 元の画像用のキャンバスクリックハンドラー
-function handleCanvasClick(event, imageType) {
-    if (!imageData[imageType].id) return;
+// 処理済み画像用のマウス移動ハンドラー
+function handleProcessedCanvasMouseMove(event, imageType) {
+    if (!dragState.isDragging || dragState.draggedImageType !== imageType || !dragState.draggedIsProcessed) return;
 
-    const canvas = canvases[imageType];
-    const rect = canvas.getBoundingClientRect();
-    const clickX = event.clientX - rect.left;
-    const clickY = event.clientY - rect.top;
+    const canvas = document.getElementById(`processed-canvas-${imageType}`);
+    const coords = getCanvasCoordinates(event, canvas);
 
-    // Canvas の表示サイズと実際のサイズの比率を計算
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    // ドラッグ中の特徴点位置を更新
+    dragState.draggedPoint.x = coords.x;
+    dragState.draggedPoint.y = coords.y;
 
-    // 実際のcanvas座標に変換
-    const x = clickX * scaleX;
-    const y = clickY * scaleY;
-
-    // 特徴点を追加
-    const point = {
-        x: x,
-        y: y,
-        type: currentFeatureType,
-        label: `${getFeatureTypeLabel(currentFeatureType)}_${imageData[imageType].points.length + 1}`
-    };
-
-    imageData[imageType].points.push(point);
-
-    // 特徴点を描画
-    drawFeaturePoint(canvas, point);
-
-    // 特徴点データをサーバーに送信
-    saveFeaturePoints(imageType);
-
-    // UI更新
-    updateUI();
+    // Canvas全体を再描画
+    redrawAllCanvas(imageType, true);
 }
+
+// 処理済み画像用のマウスアップハンドラー
+function handleProcessedCanvasMouseUp(event, imageType) {
+    if (dragState.isDragging && dragState.draggedImageType === imageType && dragState.draggedIsProcessed) {
+        // ドラッグ終了
+        dragState.isDragging = false;
+        dragState.draggedPoint = null;
+        dragState.draggedPointIndex = -1;
+        dragState.draggedImageType = null;
+        dragState.draggedIsProcessed = false;
+
+        // サーバーに保存
+        saveFeaturePoints(imageType);
+        updateUI();
+    }
+}
+
+// 処理済み画像用の右クリックハンドラー
+function handleProcessedCanvasRightClick(event, imageType) {
+    event.preventDefault();
+    
+    const targetImageData = imageData[imageType];
+    if (!targetImageData.id) return;
+
+    const canvas = document.getElementById(`processed-canvas-${imageType}`);
+    const coords = getCanvasCoordinates(event, canvas);
+
+    // 特徴点を検索して削除
+    for (let i = targetImageData.points.length - 1; i >= 0; i--) {
+        const point = targetImageData.points[i];
+        if (hitTestFeaturePoint(coords.x, coords.y, point)) {
+            // 特徴点を削除
+            targetImageData.points.splice(i, 1);
+            
+            // ラベルを再番号付け
+            relabelFeaturePoints(imageType);
+            
+            // Canvas全体を再描画
+            redrawAllCanvas(imageType, true);
+            
+            saveFeaturePoints(imageType);
+            updateUI();
+            break;
+        }
+    }
+}
+
+// 元の画像用のイベントハンドラーは削除
+// 特徴点は処理済み画像でのみ使用可能
