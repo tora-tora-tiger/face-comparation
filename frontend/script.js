@@ -233,11 +233,16 @@ function drawFeaturePoint(canvas, point) {
     ctx.fillText(point.label, point.x + 10, point.y - 5);
 }
 
-function redrawFeaturePoints(imageType) {
-    const canvas = canvases[imageType];
-    imageData[imageType].points.forEach(point => {
-        drawFeaturePoint(canvas, point);
-    });
+function redrawFeaturePoints(imageType, isProcessed = false) {
+    const canvas = isProcessed ? 
+        document.getElementById(`processed-canvas-${imageType}`) : 
+        canvases[imageType];
+    
+    if (canvas && imageData[imageType].points) {
+        imageData[imageType].points.forEach(point => {
+            drawFeaturePoint(canvas, point);
+        });
+    }
 }
 
 async function saveFeaturePoints(imageType) {
@@ -478,8 +483,14 @@ function displayProcessedImage(imageType, base64Image) {
             ctx.drawImage(img, 0, 0);
             canvas.style.display = 'block';
             
-            // 処理済み画像のキャンバスにもクリックイベントを追加
-            canvas.addEventListener('click', (e) => handleCanvasClick(e, imageType, true));
+            // 既存の特徴点を再描画
+            redrawFeaturePoints(imageType, true);
+            
+            // 処理済み画像のキャンバスにクリックイベントを追加（重複防止）
+            if (!canvas.hasProcessedClickListener) {
+                canvas.addEventListener('click', (e) => handleProcessedCanvasClick(e, imageType));
+                canvas.hasProcessedClickListener = true;
+            }
         };
         
         img.src = base64Image;
@@ -528,18 +539,24 @@ function displayDetectionInfo(detectionResults) {
 }
 
 // 処理済み画像用のキャンバスクリックハンドラー
-function handleCanvasClick(event, imageType, isProcessed = false) {
+function handleProcessedCanvasClick(event, imageType) {
     const targetImageData = imageData[imageType];
     
     if (!targetImageData.id) return;
 
-    const canvas = isProcessed ? 
-        document.getElementById(`processed-canvas-${imageType}`) : 
-        canvases[imageType];
+    const canvas = document.getElementById(`processed-canvas-${imageType}`);
     
     const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+
+    // Canvas の表示サイズと実際のサイズの比率を計算
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    // 実際のcanvas座標に変換
+    const x = clickX * scaleX;
+    const y = clickY * scaleY;
 
     // 特徴点を追加
     const point = {
@@ -550,6 +567,43 @@ function handleCanvasClick(event, imageType, isProcessed = false) {
     };
 
     targetImageData.points.push(point);
+
+    // 特徴点を描画
+    drawFeaturePoint(canvas, point);
+
+    // 特徴点データをサーバーに送信
+    saveFeaturePoints(imageType);
+
+    // UI更新
+    updateUI();
+}
+
+// 元の画像用のキャンバスクリックハンドラー
+function handleCanvasClick(event, imageType) {
+    if (!imageData[imageType].id) return;
+
+    const canvas = canvases[imageType];
+    const rect = canvas.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+
+    // Canvas の表示サイズと実際のサイズの比率を計算
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    // 実際のcanvas座標に変換
+    const x = clickX * scaleX;
+    const y = clickY * scaleY;
+
+    // 特徴点を追加
+    const point = {
+        x: x,
+        y: y,
+        type: currentFeatureType,
+        label: `${getFeatureTypeLabel(currentFeatureType)}_${imageData[imageType].points.length + 1}`
+    };
+
+    imageData[imageType].points.push(point);
 
     // 特徴点を描画
     drawFeaturePoint(canvas, point);
