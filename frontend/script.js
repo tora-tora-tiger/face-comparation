@@ -466,26 +466,23 @@ async function processFaceDetection() {
 }
 
 function displayProcessedImage(imageType, base64Image) {
-    const img = document.getElementById(`processed-${imageType}`);
     const canvas = document.getElementById(`processed-canvas-${imageType}`);
     
-    if (img) {
-        img.src = base64Image;
-        img.style.display = 'block';
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
         
-        // キャンバスも同期
-        if (canvas) {
-            const ctx = canvas.getContext('2d');
-            img.onload = function() {
-                canvas.width = img.naturalWidth;
-                canvas.height = img.naturalHeight;
-                ctx.drawImage(img, 0, 0);
-                canvas.style.display = 'block';
-                
-                // 処理済み画像のキャンバスにもクリックイベントを追加
-                canvas.addEventListener('click', (e) => handleCanvasClick(e, imageType, true));
-            };
-        }
+        img.onload = function() {
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            ctx.drawImage(img, 0, 0);
+            canvas.style.display = 'block';
+            
+            // 処理済み画像のキャンバスにもクリックイベントを追加
+            canvas.addEventListener('click', (e) => handleCanvasClick(e, imageType, true));
+        };
+        
+        img.src = base64Image;
     }
 }
 
