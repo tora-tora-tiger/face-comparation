@@ -98,6 +98,7 @@ async function extractAutoFeatures() {
         if (successCount > 0) {
             alert(`${successCount}個の画像で自動特徴点抽出が完了しました。`);
             updateUI();
+            updateFeaturePointStatistics();
         } else {
             alert('自動特徴点抽出に失敗しました。');
         }
@@ -154,6 +155,7 @@ async function clearAutoFeatures() {
         if (successCount > 0) {
             alert(`${successCount}個の画像の自動特徴点をクリアしました。`);
             updateUI();
+            updateFeaturePointStatistics();
         } else {
             alert('自動特徴点のクリアに失敗しました。');
         }
@@ -267,4 +269,129 @@ async function getExtractionStatus(imageId) {
         console.error('抽出状況の取得に失敗:', error);
     }
     return null;
+}
+
+// モード制限メッセージを表示
+function showModeRestrictionMessage() {
+    const message = '自動モードでは手動での特徴点操作はできません。手動モードに切り替えてください。';
+    
+    // 既存のメッセージを削除
+    const existingMessage = document.getElementById('mode-restriction-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    // メッセージ要素を作成
+    const messageDiv = document.createElement('div');
+    messageDiv.id = 'mode-restriction-message';
+    messageDiv.className = 'mode-restriction-message';
+    messageDiv.textContent = message;
+    
+    // マーキングセクションに追加
+    const markingSection = document.querySelector('.marking-section');
+    markingSection.insertBefore(messageDiv, markingSection.firstChild.nextSibling);
+    
+    // 3秒後に自動削除
+    setTimeout(() => {
+        if (document.getElementById('mode-restriction-message')) {
+            messageDiv.remove();
+        }
+    }, 3000);
+}
+
+// 特徴点統計を更新表示
+function updateFeaturePointStatistics() {
+    const statisticsDiv = document.getElementById('feature-point-statistics');
+    const contentDiv = document.getElementById('statistics-content');
+    
+    if (!statisticsDiv || !contentDiv) return;
+    
+    // 統計データを収集
+    const imageTypes = ['reference', 'compare1', 'compare2'];
+    const imageLabels = {
+        'reference': '基準画像',
+        'compare1': '比較画像1',
+        'compare2': '比較画像2'
+    };
+    
+    let hasData = false;
+    let statisticsHtml = '';
+    
+    imageTypes.forEach(imageType => {
+        const points = imageData[imageType].points || [];
+        if (points.length === 0) return;
+        
+        hasData = true;
+        
+        // 手動・自動の分類
+        const manualPoints = points.filter(p => p.landmark_index === undefined);
+        const autoPoints = points.filter(p => p.landmark_index !== undefined);
+        
+        // 特徴点タイプ別の統計
+        const typeStats = {};
+        points.forEach(point => {
+            const type = point.type || 'unknown';
+            if (!typeStats[type]) {
+                typeStats[type] = { manual: 0, auto: 0, total: 0 };
+            }
+            
+            if (point.landmark_index === undefined) {
+                typeStats[type].manual++;
+            } else {
+                typeStats[type].auto++;
+            }
+            typeStats[type].total++;
+        });
+        
+        // HTML生成
+        statisticsHtml += `
+            <div class="image-statistics">
+                <h5>${imageLabels[imageType]}</h5>
+                <div class="stat-item">
+                    <span class="stat-label">総特徴点数:</span>
+                    <span class="stat-value">${points.length}点</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">手動特徴点:</span>
+                    <span class="stat-value">${manualPoints.length}点</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">自動特徴点:</span>
+                    <span class="stat-value">${autoPoints.length}点</span>
+                </div>
+                
+                <div class="feature-type-breakdown">
+                    <strong>部位別内訳:</strong>
+                    ${Object.keys(typeStats).map(type => {
+                        const stat = typeStats[type];
+                        const typeLabel = getFeatureTypeLabel(type);
+                        let countClass = '';
+                        if (stat.manual > 0 && stat.auto > 0) {
+                            countClass = 'mixed';
+                        } else if (stat.auto > 0) {
+                            countClass = 'auto';
+                        } else {
+                            countClass = 'manual';
+                        }
+                        
+                        return `
+                            <div class="feature-type-item">
+                                <span class="feature-type-label">${typeLabel}:</span>
+                                <span class="feature-type-count ${countClass}">
+                                    ${stat.total}点 (手動:${stat.manual}, 自動:${stat.auto})
+                                </span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    });
+    
+    if (hasData) {
+        contentDiv.innerHTML = statisticsHtml;
+        statisticsDiv.style.display = 'block';
+    } else {
+        statisticsDiv.style.display = 'none';
+    }
 }

@@ -84,4 +84,9 @@ function updateUI() {
     } else {
         processFacesButton.textContent = '顔を検出・処理';
     }
+    
+    // 特徴点統計も更新
+    if (typeof updateFeaturePointStatistics === 'function') {
+        updateFeaturePointStatistics();
+    }
 }

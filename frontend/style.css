@@ -315,6 +315,30 @@ canvas {
     transform: translateY(-2px);
 }
 
+/* モード制限メッセージ */
+.mode-restriction-message {
+    background-color: #f39c12;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    margin: 15px 0;
+    font-weight: bold;
+    text-align: center;
+    border-left: 4px solid #e67e22;
+    animation: slideInFromTop 0.3s ease-out;
+}
+
+@keyframes slideInFromTop {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .feature-points-info {
     background-color: #f8f9fa;
     padding: 15px;
@@ -331,6 +355,96 @@ canvas {
 .points-count span {
     font-weight: bold;
     color: #2c3e50;
+}
+
+/* 特徴点統計表示 */
+.feature-point-statistics {
+    background-color: #e8f6f3;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    border-left: 4px solid #16a085;
+}
+
+.feature-point-statistics h4 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.statistics-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.image-statistics {
+    background-color: white;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #bdc3c7;
+}
+
+.image-statistics h5 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+    border-bottom: 2px solid #16a085;
+    padding-bottom: 5px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 5px 0;
+}
+
+.stat-label {
+    font-weight: bold;
+    color: #34495e;
+}
+
+.stat-value {
+    color: #16a085;
+    font-weight: bold;
+}
+
+.feature-type-breakdown {
+    margin-top: 10px;
+}
+
+.feature-type-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    margin: 2px 0;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+}
+
+.feature-type-label {
+    font-size: 0.9em;
+    color: #2c3e50;
+}
+
+.feature-type-count {
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.feature-type-count.auto {
+    color: #e67e22;
+}
+
+.feature-type-count.manual {
+    color: #27ae60;
+}
+
+.feature-type-count.mixed {
+    color: #8e44ad;
 }
 
 /* ボタン */

@@ -7,6 +7,12 @@ function handleProcessedCanvasMouseDown(event, imageType) {
     const targetImageData = imageData[imageType];
     if (!targetImageData.id) return;
 
+    // 自動モードの場合は手動操作を無効化
+    if (currentMarkingMode === 'auto') {
+        showModeRestrictionMessage();
+        return;
+    }
+
     const canvas = document.getElementById(`processed-canvas-${imageType}`);
     const coords = getCanvasCoordinates(event, canvas);
 
@@ -47,6 +53,11 @@ function handleProcessedCanvasMouseDown(event, imageType) {
 function handleProcessedCanvasMouseMove(event, imageType) {
     if (!dragState.isDragging || dragState.draggedImageType !== imageType || !dragState.draggedIsProcessed) return;
 
+    // 自動モードの場合はドラッグ操作を無効化
+    if (currentMarkingMode === 'auto') {
+        return;
+    }
+
     const canvas = document.getElementById(`processed-canvas-${imageType}`);
     const coords = getCanvasCoordinates(event, canvas);
 
@@ -80,6 +91,12 @@ function handleProcessedCanvasRightClick(event, imageType) {
     
     const targetImageData = imageData[imageType];
     if (!targetImageData.id) return;
+
+    // 自動モードの場合は手動削除を無効化
+    if (currentMarkingMode === 'auto') {
+        showModeRestrictionMessage();
+        return;
+    }
 
     const canvas = document.getElementById(`processed-canvas-${imageType}`);
     const coords = getCanvasCoordinates(event, canvas);
