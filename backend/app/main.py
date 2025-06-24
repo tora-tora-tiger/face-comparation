@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse
 import os
 
 # ルーターのインポート
-from app.routers import images, comparison
+from app.routers import images, comparison, face_detection
 
 app = FastAPI(
     title="Face Comparison API",
@@ -40,6 +40,7 @@ if os.path.exists(frontend_dir):
 # APIルーターを追加
 app.include_router(images.router, prefix="/api", tags=["images"])
 app.include_router(comparison.router, prefix="/api", tags=["comparison"])
+app.include_router(face_detection.router, prefix="/api", tags=["face-detection"])
 
 @app.get("/")
 async def serve_frontend():

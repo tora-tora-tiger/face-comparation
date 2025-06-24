@@ -1,11 +1,12 @@
 // グローバル変数
 const imageData = {
-    reference: { id: null, file: null, canvas: null, points: [] },
-    compare1: { id: null, file: null, canvas: null, points: [] },
-    compare2: { id: null, file: null, canvas: null, points: [] }
+    reference: { id: null, file: null, canvas: null, points: [], processed: false, processedImage: null },
+    compare1: { id: null, file: null, canvas: null, points: [], processed: false, processedImage: null },
+    compare2: { id: null, file: null, canvas: null, points: [], processed: false, processedImage: null }
 };
 
 let currentFeatureType = 'rightEye';
+let faceDetectionResults = {};
 
 // DOM要素の取得
 const fileInputs = {
@@ -23,6 +24,13 @@ const canvases = {
 const executeButton = document.getElementById('execute-comparison');
 const featureTypeSelect = document.getElementById('feature-type');
 const clearPointsButton = document.getElementById('clear-points');
+
+// 顔検出関連のDOM要素
+const processFacesButton = document.getElementById('process-faces');
+const faceProcessingLoading = document.getElementById('face-processing-loading');
+const processedImagesGrid = document.getElementById('processed-images-grid');
+const detectionInfo = document.getElementById('detection-info');
+const detectionDetails = document.getElementById('detection-details');
 
 // 初期化
 document.addEventListener('DOMContentLoaded', function() {
@@ -52,6 +60,7 @@ function setupEventListeners() {
     // ボタンイベント
     executeButton.addEventListener('click', executeComparison);
     clearPointsButton.addEventListener('click', clearAllPoints);
+    processFacesButton.addEventListener('click', processFaceDetection);
 }
 
 function setupDragAndDrop() {
@@ -369,6 +378,15 @@ function updateUI() {
     } else {
         executeButton.textContent = '比較を実行';
     }
+
+    // 顔検出ボタンの有効/無効
+    processFacesButton.disabled = !allImagesUploaded;
+    
+    if (!allImagesUploaded) {
+        processFacesButton.textContent = '全ての画像をアップロードしてください';
+    } else {
+        processFacesButton.textContent = '顔を検出・処理';
+    }
 }
 
 function getFeatureTypeLabel(type) {
@@ -380,4 +398,168 @@ function getFeatureTypeLabel(type) {
         other: 'その他'
     };
     return labels[type] || 'その他';
+}
+
+// 顔検出機能
+async function processFaceDetection() {
+    // ローディング表示
+    faceProcessingLoading.style.display = 'block';
+    processFacesButton.disabled = true;
+    processedImagesGrid.style.display = 'none';
+    detectionInfo.style.display = 'none';
+
+    const imageTypes = ['reference', 'compare1', 'compare2'];
+    const detectionResults = {};
+
+    try {
+        // 各画像に対して顔検出を実行
+        for (const imageType of imageTypes) {
+            const imageId = imageData[imageType].id;
+            
+            console.log(`Processing face detection for ${imageType}: ${imageId}`);
+            
+            const response = await fetch('/api/detect-face', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    image_id: imageId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`顔検出に失敗しました (${imageType}): ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            detectionResults[imageType] = result;
+            
+            if (result.success && result.processed_image) {
+                // 処理済み画像を表示
+                displayProcessedImage(imageType, result.processed_image);
+                imageData[imageType].processed = true;
+                imageData[imageType].processedImage = result.processed_image;
+                
+                // 顔検出結果を保存
+                faceDetectionResults[imageType] = result;
+            } else {
+                console.warn(`顔検出に失敗: ${imageType} - ${result.message}`);
+            }
+        }
+
+        // 検出情報を表示
+        displayDetectionInfo(detectionResults);
+        
+        // 処理済み画像グリッドを表示
+        processedImagesGrid.style.display = 'grid';
+        detectionInfo.style.display = 'block';
+
+    } catch (error) {
+        console.error('顔検出処理中にエラー:', error);
+        alert('顔検出処理中にエラーが発生しました: ' + error.message);
+    } finally {
+        // ローディング非表示
+        faceProcessingLoading.style.display = 'none';
+        processFacesButton.disabled = false;
+    }
+}
+
+function displayProcessedImage(imageType, base64Image) {
+    const img = document.getElementById(`processed-${imageType}`);
+    const canvas = document.getElementById(`processed-canvas-${imageType}`);
+    
+    if (img) {
+        img.src = base64Image;
+        img.style.display = 'block';
+        
+        // キャンバスも同期
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            img.onload = function() {
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                ctx.drawImage(img, 0, 0);
+                canvas.style.display = 'block';
+                
+                // 処理済み画像のキャンバスにもクリックイベントを追加
+                canvas.addEventListener('click', (e) => handleCanvasClick(e, imageType, true));
+            };
+        }
+    }
+}
+
+function displayDetectionInfo(detectionResults) {
+    let infoHtml = '';
+    
+    Object.keys(detectionResults).forEach(imageType => {
+        const result = detectionResults[imageType];
+        const typeLabel = imageType === 'reference' ? '基準画像' : 
+                         imageType === 'compare1' ? '比較画像1' : '比較画像2';
+        
+        infoHtml += `<div class="detection-detail-item">
+            <span class="detection-detail-label">${typeLabel}</span>
+            <span class="detection-detail-value">${result.success ? '成功' : '失敗'}</span>
+        </div>`;
+        
+        if (result.success && result.processing_info) {
+            infoHtml += `<div class="detection-detail-item">
+                <span class="detection-detail-label">　検出信頼度</span>
+                <span class="detection-detail-value">${(result.processing_info.detection_confidence * 100).toFixed(1)}%</span>
+            </div>`;
+            
+            infoHtml += `<div class="detection-detail-item">
+                <span class="detection-detail-label">　ランドマーク数</span>
+                <span class="detection-detail-value">${result.processing_info.landmarks_detected}</span>
+            </div>`;
+            
+            infoHtml += `<div class="detection-detail-item">
+                <span class="detection-detail-label">　処理後サイズ</span>
+                <span class="detection-detail-value">${result.processing_info.processed_size[1]} x ${result.processing_info.processed_size[0]}</span>
+            </div>`;
+        }
+        
+        if (!result.success) {
+            infoHtml += `<div class="detection-detail-item">
+                <span class="detection-detail-label">　エラー</span>
+                <span class="detection-detail-value" style="color: #e74c3c;">${result.message}</span>
+            </div>`;
+        }
+    });
+    
+    detectionDetails.innerHTML = infoHtml;
+}
+
+// 処理済み画像用のキャンバスクリックハンドラー
+function handleCanvasClick(event, imageType, isProcessed = false) {
+    const targetImageData = imageData[imageType];
+    
+    if (!targetImageData.id) return;
+
+    const canvas = isProcessed ? 
+        document.getElementById(`processed-canvas-${imageType}`) : 
+        canvases[imageType];
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    // 特徴点を追加
+    const point = {
+        x: x,
+        y: y,
+        type: currentFeatureType,
+        label: `${getFeatureTypeLabel(currentFeatureType)}_${targetImageData.points.length + 1}`
+    };
+
+    targetImageData.points.push(point);
+
+    // 特徴点を描画
+    drawFeaturePoint(canvas, point);
+
+    // 特徴点データをサーバーに送信
+    saveFeaturePoints(imageType);
+
+    // UI更新
+    updateUI();
 }

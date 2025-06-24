@@ -53,9 +53,54 @@
                 </div>
             </section>
 
+            <!-- 顔検出・正面化セクション -->
+            <section class="face-detection-section">
+                <h2>2. 顔検出・正面化処理</h2>
+                <div class="face-detection-controls">
+                    <p>アップロードした画像から顔を検出し、トリミング・正面化処理を行います。</p>
+                    <button id="process-faces" class="btn btn-primary" disabled>顔を検出・処理</button>
+                    <div id="face-processing-loading" style="display: none;">
+                        <p>顔検出処理中...</p>
+                    </div>
+                </div>
+                
+                <!-- 処理結果表示エリア -->
+                <div class="processed-images-grid" id="processed-images-grid" style="display: none;">
+                    <div class="processed-image-item">
+                        <h4>基準画像（処理後）</h4>
+                        <div class="processed-image-container">
+                            <img id="processed-reference" style="display: none;">
+                            <canvas id="processed-canvas-reference" style="display: none;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="processed-image-item">
+                        <h4>比較画像1（処理後）</h4>
+                        <div class="processed-image-container">
+                            <img id="processed-compare1" style="display: none;">
+                            <canvas id="processed-canvas-compare1" style="display: none;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="processed-image-item">
+                        <h4>比較画像2（処理後）</h4>
+                        <div class="processed-image-container">
+                            <img id="processed-compare2" style="display: none;">
+                            <canvas id="processed-canvas-compare2" style="display: none;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 検出情報表示 -->
+                <div class="detection-info" id="detection-info" style="display: none;">
+                    <h4>検出情報</h4>
+                    <div id="detection-details"></div>
+                </div>
+            </section>
+
             <!-- 特徴点マーキングセクション -->
             <section class="marking-section">
-                <h2>2. 特徴点をマーキング</h2>
+                <h2>3. 特徴点をマーキング</h2>
                 <div class="marking-controls">
                     <div class="feature-type-selector">
                         <label>特徴点タイプ:</label>
@@ -81,7 +126,7 @@
 
             <!-- 比較実行セクション -->
             <section class="comparison-section">
-                <h2>3. 比較実行</h2>
+                <h2>4. 比較実行</h2>
                 <button id="execute-comparison" class="btn btn-primary" disabled>比較を実行</button>
                 <div id="loading" style="display: none;">
                     <p>計算中...</p>
@@ -90,7 +135,7 @@
 
             <!-- 結果表示セクション -->
             <section class="results-section">
-                <h2>4. 結果</h2>
+                <h2>5. 結果</h2>
                 <div id="comparison-results" style="display: none;">
                     <div class="result-summary">
                         <h3>比較結果</h3>
