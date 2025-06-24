@@ -5,8 +5,10 @@ from datetime import datetime
 class FeaturePoint(BaseModel):
     x: float
     y: float
-    type: Literal['rightEye', 'leftEye', 'nose', 'mouth', 'other']
+    type: Literal['rightEye', 'leftEye', 'nose', 'mouth', 'face_contour', 'other']
     label: str
+    confidence: Optional[float] = None
+    landmark_index: Optional[int] = None
 
 class ImageUploadResponse(BaseModel):
     image_id: str
@@ -41,6 +43,41 @@ class ErrorResponse(BaseModel):
     error: str
     message: str
     status_code: int
+
+# 自動特徴点抽出関連のモデル
+class AutoFeatureExtractionRequest(BaseModel):
+    image_id: str
+    feature_types: Optional[List[str]] = ['rightEye', 'leftEye', 'nose', 'mouth']
+    points_per_type: Optional[Dict[str, int]] = {
+        'rightEye': 4,
+        'leftEye': 4,
+        'nose': 3,
+        'mouth': 4,
+        'face_contour': 8
+    }
+    confidence_threshold: Optional[float] = 0.5
+
+class AutoFeatureExtractionResponse(BaseModel):
+    success: bool
+    message: str
+    image_id: str
+    feature_points: List[FeaturePoint]
+    total_landmarks_detected: Optional[int] = None
+    extraction_parameters: Optional[Dict[str, Any]] = None
+
+class FeatureExtractionParametersRequest(BaseModel):
+    feature_types: List[str]
+    points_per_type: Dict[str, int]
+    confidence_threshold: Optional[float] = 0.5
+
+class FeatureExtractionInfo(BaseModel):
+    service_name: str
+    version: str
+    available_feature_types: List[str]
+    max_points_per_type: Dict[str, int]
+    default_parameters: Dict[str, Any]
+    supported_image_formats: List[str]
+    mediapipe_version: str
 
 # 顔検出関連のモデル
 class FaceBoundingBox(BaseModel):

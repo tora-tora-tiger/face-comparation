@@ -98,18 +98,95 @@
             <!-- 特徴点マーキングセクション -->
             <section class="marking-section">
                 <h2>3. 特徴点をマーキング</h2>
-                <div class="marking-controls">
-                    <div class="feature-type-selector">
-                        <label>特徴点タイプ:</label>
-                        <select id="feature-type">
-                            <option value="rightEye">右目</option>
-                            <option value="leftEye">左目</option>
-                            <option value="nose">鼻</option>
-                            <option value="mouth">口</option>
-                            <option value="other">その他</option>
-                        </select>
+                
+                <!-- モード選択 -->
+                <div class="mode-selection">
+                    <h3>マーキングモード</h3>
+                    <div class="mode-options">
+                        <label class="mode-option">
+                            <input type="radio" name="marking-mode" value="manual" checked>
+                            <span>手動モード</span>
+                        </label>
+                        <label class="mode-option">
+                            <input type="radio" name="marking-mode" value="auto">
+                            <span>自動モード</span>
+                        </label>
                     </div>
-                    <button id="clear-points" class="btn btn-secondary">特徴点をクリア</button>
+                </div>
+
+                <!-- 手動モード設定 -->
+                <div id="manual-mode-settings" class="mode-settings">
+                    <div class="marking-controls">
+                        <div class="feature-type-selector">
+                            <label>特徴点タイプ:</label>
+                            <select id="feature-type">
+                                <option value="rightEye">右目</option>
+                                <option value="leftEye">左目</option>
+                                <option value="nose">鼻</option>
+                                <option value="mouth">口</option>
+                                <option value="face_contour">輪郭</option>
+                                <option value="other">その他</option>
+                            </select>
+                        </div>
+                        <button id="clear-points" class="btn btn-secondary">特徴点をクリア</button>
+                    </div>
+                </div>
+
+                <!-- 自動モード設定 -->
+                <div id="auto-mode-settings" class="mode-settings" style="display: none;">
+                    <div class="auto-controls">
+                        <div class="auto-parameters">
+                            <h4>自動抽出パラメータ</h4>
+                            
+                            <div class="parameter-group">
+                                <label>抽出する特徴点タイプ:</label>
+                                <div class="feature-checkboxes">
+                                    <label><input type="checkbox" value="rightEye" checked> 右目</label>
+                                    <label><input type="checkbox" value="leftEye" checked> 左目</label>
+                                    <label><input type="checkbox" value="nose" checked> 鼻</label>
+                                    <label><input type="checkbox" value="mouth" checked> 口</label>
+                                    <label><input type="checkbox" value="face_contour"> 輪郭</label>
+                                </div>
+                            </div>
+
+                            <div class="parameter-group">
+                                <label>各部位の点数:</label>
+                                <div class="points-settings">
+                                    <div class="point-setting">
+                                        <span>右目:</span>
+                                        <input type="number" id="points-rightEye" min="1" max="16" value="4">
+                                    </div>
+                                    <div class="point-setting">
+                                        <span>左目:</span>
+                                        <input type="number" id="points-leftEye" min="1" max="16" value="4">
+                                    </div>
+                                    <div class="point-setting">
+                                        <span>鼻:</span>
+                                        <input type="number" id="points-nose" min="1" max="10" value="3">
+                                    </div>
+                                    <div class="point-setting">
+                                        <span>口:</span>
+                                        <input type="number" id="points-mouth" min="1" max="12" value="4">
+                                    </div>
+                                    <div class="point-setting">
+                                        <span>輪郭:</span>
+                                        <input type="number" id="points-face_contour" min="1" max="36" value="8">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="parameter-group">
+                                <label>信頼度しきい値:</label>
+                                <input type="range" id="confidence-threshold" min="0" max="1" step="0.1" value="0.5">
+                                <span id="confidence-value">0.5</span>
+                            </div>
+                        </div>
+
+                        <div class="auto-actions">
+                            <button id="extract-auto-features" class="btn btn-primary">自動特徴点抽出</button>
+                            <button id="clear-auto-features" class="btn btn-secondary">自動特徴点をクリア</button>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="marking-instructions">
@@ -183,6 +260,7 @@
     <script src="/static/js/featurePoints.js"></script>
     <script src="/static/js/featurePointEditor.js"></script>
     <script src="/static/js/faceDetection.js"></script>
+    <script src="/static/js/autoFeatures.js"></script>
     <script src="/static/js/comparison.js"></script>
     <script src="/static/js/eventListeners.js"></script>
     <script src="/static/js/app.js"></script>

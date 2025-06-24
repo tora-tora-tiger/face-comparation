@@ -21,4 +21,30 @@ function setupEventListeners() {
     executeButton.addEventListener('click', executeComparison);
     clearPointsButton.addEventListener('click', clearAllPoints);
     processFacesButton.addEventListener('click', processFaceDetection);
+
+    // 自動特徴点関連のイベント
+    const extractAutoButton = document.getElementById('extract-auto-features');
+    const clearAutoButton = document.getElementById('clear-auto-features');
+    
+    if (extractAutoButton) {
+        extractAutoButton.addEventListener('click', extractAutoFeatures);
+    }
+    
+    if (clearAutoButton) {
+        clearAutoButton.addEventListener('click', clearAutoFeatures);
+    }
+
+    // モード切り替え
+    const modeRadios = document.querySelectorAll('input[name="marking-mode"]');
+    modeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            switchMarkingMode(e.target.value);
+        });
+    });
+
+    // 信頼度スライダー
+    const confidenceSlider = document.getElementById('confidence-threshold');
+    if (confidenceSlider) {
+        confidenceSlider.addEventListener('input', updateConfidenceValue);
+    }
 }

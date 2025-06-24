@@ -31,10 +31,16 @@ class FaceComparisonService:
         total_distance = 0.0
         
         for ref_point, comp_point in zip(reference_points, comparison_points):
+            # 辞書形式とオブジェクト形式の両方に対応
+            ref_x = ref_point.x if hasattr(ref_point, 'x') else ref_point.get('x', 0)
+            ref_y = ref_point.y if hasattr(ref_point, 'y') else ref_point.get('y', 0)
+            comp_x = comp_point.x if hasattr(comp_point, 'x') else comp_point.get('x', 0)
+            comp_y = comp_point.y if hasattr(comp_point, 'y') else comp_point.get('y', 0)
+            
             # x座標の差の二乗
-            dx = ref_point.x - (lambda_val * comp_point.x)
+            dx = ref_x - (lambda_val * comp_x)
             # y座標の差の二乗
-            dy = ref_point.y - (lambda_val * comp_point.y)
+            dy = ref_y - (lambda_val * comp_y)
             
             total_distance += dx**2 + dy**2
         
@@ -105,7 +111,10 @@ class FaceComparisonService:
                 "lambda_optimization_range": self.lambda_range,
                 "distance_difference": abs(min_distance1 - min_distance2),
                 "similarity_ratio": min(min_distance1, min_distance2) / max(min_distance1, min_distance2),
-                "feature_types_used": list(set([point.type for point in reference_points]))
+                "feature_types_used": list(set([
+                    point.type if hasattr(point, 'type') else point.get('type', 'unknown') 
+                    for point in reference_points
+                ]))
             }
             
             execution_time = time.time() - start_time
@@ -123,18 +132,22 @@ class FaceComparisonService:
         except Exception as e:
             raise ValueError(f"Face comparison failed: {str(e)}")
     
-    def validate_points(self, points: List[FeaturePoint]) -> bool:
+    def validate_points(self, points) -> bool:
         """特徴点データの妥当性をチェック"""
         if not points:
             return False
         
         for point in points:
+            # 辞書形式とオブジェクト形式の両方に対応
+            x = point.x if hasattr(point, 'x') else point.get('x', 0)
+            y = point.y if hasattr(point, 'y') else point.get('y', 0)
+            
             # 座標が負の値でないかチェック
-            if point.x < 0 or point.y < 0:
+            if x < 0 or y < 0:
                 return False
             
             # 座標が合理的な範囲内かチェック（0-10000の範囲を想定）
-            if point.x > 10000 or point.y > 10000:
+            if x > 10000 or y > 10000:
                 return False
         
         return True
