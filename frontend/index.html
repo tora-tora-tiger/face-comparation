@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>顔認証システム - Face Recognition System</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>顔認証システム</h1>
+            <p>画像をアップロードし、特徴点をマーキングして顔の類似度を比較します</p>
+        </header>
+
+        <main>
+            <!-- 画像アップロードセクション -->
+            <section class="upload-section">
+                <h2>1. 画像をアップロード</h2>
+                <div class="upload-grid">
+                    <div class="upload-item">
+                        <h3>基準画像</h3>
+                        <div class="upload-area" id="upload-area-reference">
+                            <input type="file" id="file-reference" accept="image/*" style="display: none;">
+                            <div class="upload-placeholder" onclick="document.getElementById('file-reference').click()">
+                                <p>クリックまたはドロップして画像を選択</p>
+                            </div>
+                        </div>
+                        <canvas id="canvas-reference" style="display: none;"></canvas>
+                    </div>
+                    
+                    <div class="upload-item">
+                        <h3>比較画像1</h3>
+                        <div class="upload-area" id="upload-area-compare1">
+                            <input type="file" id="file-compare1" accept="image/*" style="display: none;">
+                            <div class="upload-placeholder" onclick="document.getElementById('file-compare1').click()">
+                                <p>クリックまたはドロップして画像を選択</p>
+                            </div>
+                        </div>
+                        <canvas id="canvas-compare1" style="display: none;"></canvas>
+                    </div>
+                    
+                    <div class="upload-item">
+                        <h3>比較画像2</h3>
+                        <div class="upload-area" id="upload-area-compare2">
+                            <input type="file" id="file-compare2" accept="image/*" style="display: none;">
+                            <div class="upload-placeholder" onclick="document.getElementById('file-compare2').click()">
+                                <p>クリックまたはドロップして画像を選択</p>
+                            </div>
+                        </div>
+                        <canvas id="canvas-compare2" style="display: none;"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 特徴点マーキングセクション -->
+            <section class="marking-section">
+                <h2>2. 特徴点をマーキング</h2>
+                <div class="marking-controls">
+                    <div class="feature-type-selector">
+                        <label>特徴点タイプ:</label>
+                        <select id="feature-type">
+                            <option value="rightEye">右目</option>
+                            <option value="leftEye">左目</option>
+                            <option value="nose">鼻</option>
+                            <option value="mouth">口</option>
+                            <option value="other">その他</option>
+                        </select>
+                    </div>
+                    <button id="clear-points" class="btn btn-secondary">特徴点をクリア</button>
+                </div>
+                
+                <div class="feature-points-info">
+                    <div class="points-count">
+                        <span>基準画像: <span id="points-count-reference">0</span>点</span>
+                        <span>比較画像1: <span id="points-count-compare1">0</span>点</span>
+                        <span>比較画像2: <span id="points-count-compare2">0</span>点</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 比較実行セクション -->
+            <section class="comparison-section">
+                <h2>3. 比較実行</h2>
+                <button id="execute-comparison" class="btn btn-primary" disabled>比較を実行</button>
+                <div id="loading" style="display: none;">
+                    <p>計算中...</p>
+                </div>
+            </section>
+
+            <!-- 結果表示セクション -->
+            <section class="results-section">
+                <h2>4. 結果</h2>
+                <div id="comparison-results" style="display: none;">
+                    <div class="result-summary">
+                        <h3>比較結果</h3>
+                        <div class="winner" id="result-winner"></div>
+                    </div>
+                    
+                    <div class="result-details">
+                        <div class="result-item">
+                            <h4>比較画像1</h4>
+                            <div class="score-info">
+                                <span>距離スコア: <span id="score1"></span></span>
+                                <span>最適λ値: <span id="lambda1"></span></span>
+                            </div>
+                        </div>
+                        
+                        <div class="result-item">
+                            <h4>比較画像2</h4>
+                            <div class="score-info">
+                                <span>距離スコア: <span id="score2"></span></span>
+                                <span>最適λ値: <span id="lambda2"></span></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="result-metadata">
+                        <h4>詳細情報</h4>
+                        <div id="result-metadata-content"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
