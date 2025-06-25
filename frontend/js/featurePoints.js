@@ -10,25 +10,27 @@ function drawFeaturePoint(canvas, point) {
         leftEye: '#9b59b6',
         nose: '#f39c12',
         mouth: '#e74c3c',
+        face_contour: '#1abc9c',
         other: '#95a5a6'
     };
 
-    // 点を描画（半径を10から50に拡大 = 5倍）
+    // 点を描画（適切なサイズに調整）
     ctx.fillStyle = colors[point.type] || colors.other;
     ctx.strokeStyle = 'white';
-    ctx.lineWidth = 8;
+    ctx.lineWidth = 3;
     
+    const radius = 8; // 適切なサイズに調整
     ctx.beginPath();
-    ctx.arc(point.x, point.y, 50, 0, 2 * Math.PI);
+    ctx.arc(point.x, point.y, radius, 0, 2 * Math.PI);
     ctx.fill();
     ctx.stroke();
 
-    // ラベルを描画（フォントサイズをさらに大きく）
+    // ラベルを描画（適切なフォントサイズに調整）
     ctx.fillStyle = '#2c3e50';
-    ctx.font = 'bold 48px Arial';
+    ctx.font = 'bold 12px Arial';
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(point.label, point.x, point.y);
+    ctx.textBaseline = 'top';
+    ctx.fillText(point.label, point.x, point.y + radius + 2);
 }
 
 // 特徴点を再描画
@@ -98,7 +100,10 @@ function redrawAllCanvas(imageType, isProcessed) {
     if (!isProcessed) return;
     
     const canvas = document.getElementById(`processed-canvas-${imageType}`);
-    if (!canvas) return;
+    if (!canvas) {
+        console.warn(`Canvas not found for ${imageType}`);
+        return;
+    }
     
     const ctx = canvas.getContext('2d');
     
@@ -106,10 +111,23 @@ function redrawAllCanvas(imageType, isProcessed) {
     if (imageData[imageType].processedImage) {
         const img = new Image();
         img.onload = function() {
+            // キャンバスサイズを画像に合わせて設定
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            
+            // 画像をクリアして再描画
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
+            
+            // 特徴点を再描画
+            console.log(`Redrawing ${imageData[imageType].points.length} feature points for ${imageType}`);
             redrawFeaturePoints(imageType, true);
         };
+        img.onerror = function() {
+            console.error(`Failed to load processed image for ${imageType}`);
+        };
         img.src = imageData[imageType].processedImage;
+    } else {
+        console.warn(`No processed image found for ${imageType}`);
     }
 }

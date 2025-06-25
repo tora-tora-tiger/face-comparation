@@ -717,4 +717,5 @@ canvas {
 .feature-point.leftEye { background-color: #9b59b6; }
 .feature-point.nose { background-color: #f39c12; }
 .feature-point.mouth { background-color: #e74c3c; }
+.feature-point.face_contour { background-color: #1abc9c; }
 .feature-point.other { background-color: #95a5a6; }

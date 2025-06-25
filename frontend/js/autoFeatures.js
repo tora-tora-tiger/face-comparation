@@ -83,19 +83,25 @@ async function extractAutoFeatures() {
                 );
                 imageData[imageType].points = [...existingManualPoints, ...newPoints];
 
-                // 処理済み画像のcanvasに特徴点を再描画
-                if (imageData[imageType].processedImage) {
-                    redrawAllCanvas(imageType, true);
-                }
-
+                console.log(`自動抽出成功 (${imageType}): ${newPoints.length}点追加`);
+                console.log(`Total points for ${imageType}: ${imageData[imageType].points.length}`);
+                
                 successCount++;
-                console.log(`自動抽出成功 (${imageType}): ${newPoints.length}点`);
             } else {
                 console.warn(`自動抽出失敗 (${imageType}): ${result.message}`);
             }
         }
 
         if (successCount > 0) {
+            // すべての処理済み画像を再描画
+            const imageTypes = ['reference', 'compare1', 'compare2'];
+            imageTypes.forEach(imageType => {
+                if (imageData[imageType].processedImage && imageData[imageType].points.length > 0) {
+                    console.log(`Redrawing canvas for ${imageType} with ${imageData[imageType].points.length} points`);
+                    setTimeout(() => redrawAllCanvas(imageType, true), 100); // 少し遅延を入れて確実に実行
+                }
+            });
+            
             alert(`${successCount}個の画像で自動特徴点抽出が完了しました。`);
             updateUI();
             updateFeaturePointStatistics();
@@ -143,16 +149,19 @@ async function clearAutoFeatures() {
                     p => p.landmark_index === undefined
                 );
 
-                // 処理済み画像のcanvasを再描画
-                if (imageData[imageType].processedImage) {
-                    redrawAllCanvas(imageType, true);
-                }
-
                 successCount++;
             }
         }
 
         if (successCount > 0) {
+            // すべての処理済み画像を再描画
+            const imageTypes = ['reference', 'compare1', 'compare2'];
+            imageTypes.forEach(imageType => {
+                if (imageData[imageType].processedImage) {
+                    setTimeout(() => redrawAllCanvas(imageType, true), 100);
+                }
+            });
+            
             alert(`${successCount}個の画像の自動特徴点をクリアしました。`);
             updateUI();
             updateFeaturePointStatistics();
