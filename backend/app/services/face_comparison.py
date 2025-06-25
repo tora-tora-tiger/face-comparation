@@ -9,7 +9,7 @@ class FaceComparisonService:
     """顔比較サービス"""
     
     def __init__(self):
-        self.lambda_range = (0.1, 3.0)  # λの探索範囲
+        self.lambda_range = (0, 300.0)  # λの探索範囲
         
     def calculate_distance(self, reference_points: List[FeaturePoint], 
                           comparison_points: List[FeaturePoint], 
