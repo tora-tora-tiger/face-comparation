@@ -113,14 +113,20 @@ async function processFaceDetection(imageType) {
     displayDetectionInfo(result.detection_info, imageType);
 }
 
-function displayProcessedImage(base64Image, imageType) {
+function displayProcessedImage(result, imageType) {
     const img = new Image();
     img.onload = () => {
         const canvas = elements.canvases.processed[imageType];
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     };
-    img.src = `data:image/jpeg;base64,${base64Image}`;
+    
+    // URLを優先使用、なければBase64を使用
+    if (result.processed_image_url) {
+        img.src = result.processed_image_url;
+    } else if (result.processed_image) {
+        img.src = `data:image/jpeg;base64,${result.processed_image}`;
+    }
 }
 ```
 
@@ -151,12 +157,21 @@ class FaceDetectionService:
         # 6. 回転補正
         corrected = self.rotate_image(cropped, -angle)
         
-        # 7. Base64エンコード
+        # 7. 処理済み画像をファイルに保存
+        processed_id = str(uuid.uuid4())
+        processed_filename = f"processed_{processed_id}.jpg"
+        processed_path = os.path.join(uploads_dir, processed_filename)
+        cv2.imwrite(processed_path, corrected)
+        
+        # 8. Base64エンコード（後方互換性のため）
         _, buffer = cv2.imencode('.jpg', corrected)
         base64_image = base64.b64encode(buffer).decode('utf-8')
         
         return {
             "processed_image": base64_image,
+            "processed_image_id": processed_id,
+            "processed_image_filename": processed_filename,
+            "processed_image_url": f"/uploads/{processed_filename}",
             "detection_info": {
                 "face_bounds": [x, y, w, h],
                 "rotation_angle": angle,
@@ -165,7 +180,7 @@ class FaceDetectionService:
         }
 ```
 
-**データ変換**: `Image File` → `OpenCV Mat` → `Face Bounds` → `Cropped Image` → `Rotated Image` → `Base64 String`
+**データ変換**: `Image File` → `OpenCV Mat` → `Face Bounds` → `Cropped Image` → `Rotated Image` → `Saved File` + `Base64 String`
 
 ### 3. 特徴点抽出フロー
 
@@ -251,19 +266,14 @@ async function extractFeaturesForImage(imageType, params) {
 #### MediaPipe処理（バックエンド）
 ```python
 class AutoFeatureExtractionService:
-    def extract_auto_features(self, image_path=None, image_data=None, params=None):
-        # 1. 画像読み込み（処理済み画像を優先）
-        if image_data:
-            # Base64データから画像を復元（正面化後の画像）
-            image_bytes = base64.b64decode(image_data)
-            pil_image = Image.open(BytesIO(image_bytes))
-            rgb_image = np.array(pil_image)
-        elif image_path:
-            # ファイルパスから読み込み（元画像）
+    def extract_auto_features(self, image_path=None, params=None):
+        # 1. 画像読み込み（処理済み画像ファイルを優先）
+        if image_path:
+            # ファイルパスから読み込み（処理済み画像または元画像）
             image = cv2.imread(image_path)
             rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         else:
-            raise ValueError("画像パスまたは画像データが必要です")
+            raise ValueError("画像パスが必要です")
         
         # 2. MediaPipe処理
         results = self.face_mesh.process(rgb_image)
@@ -300,7 +310,7 @@ class AutoFeatureExtractionService:
         return {"features": extracted_points}
 ```
 
-**データ変換**: `Processed Image (Base64)` → `PIL Image` → `NumPy Array` → `MediaPipe Landmarks` → `Normalized Coordinates` → `Pixel Coordinates` → `Feature Points`
+**データ変換**: `Processed Image File` → `OpenCV Mat` → `RGB Array` → `MediaPipe Landmarks` → `Normalized Coordinates` → `Pixel Coordinates` → `Feature Points`
 
 ### 4. 比較処理フロー
 

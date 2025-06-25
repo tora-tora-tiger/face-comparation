@@ -167,6 +167,9 @@ Response:
 {
   "success": true,
   "processed_image": "base64_encoded_image_data",
+  "processed_image_id": "550e8400-e29b-41d4-a716-446655440001",
+  "processed_image_filename": "processed_550e8400-e29b-41d4-a716-446655440001.jpg",
+  "processed_image_url": "/uploads/processed_550e8400-e29b-41d4-a716-446655440001.jpg",
   "detection_info": {
     "face_bounds": [x, y, width, height],
     "rotation_angle": -5.2,

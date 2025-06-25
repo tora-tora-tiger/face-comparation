@@ -102,11 +102,15 @@ class AutoFeatureExtractionService:
                     'feature_points': []
                 }
             
-            # RGB画像が既に準備済みでない場合は変換
-            if image_data and 'rgb_image' not in locals():
-                rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            elif not image_data:
-                rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            # RGB画像への変換が必要な場合は変換
+            if 'rgb_image' not in locals():
+                # image_dataから来た場合はすでにRGB形式の可能性があるため確認
+                if len(image.shape) == 3 and image.shape[2] == 3:
+                    # 既にカラー画像の場合
+                    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) if not image_data else rgb_image
+                else:
+                    # グレースケールの場合
+                    rgb_image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
             
             # MediaPipeで顔ランドマークを検出
             results = self.face_mesh.process(rgb_image)

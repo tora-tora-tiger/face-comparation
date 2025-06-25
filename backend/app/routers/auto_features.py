@@ -29,17 +29,22 @@ async def extract_auto_features(request: AutoFeatureExtractionRequest) -> AutoFe
     
     image_id = request.image_id
     
-    # まず処理済み画像を確認
-    processed_image_data = None
-    if image_id in processed_images_storage:
-        processed_image_data = processed_images_storage[image_id]["processed_image"]
+    # プロジェクトルートとuploadsディレクトリ
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    uploads_dir = os.path.join(project_root, "uploads")
+    
+    # 処理済み画像ファイルを確認
+    processed_image_path = None
+    if image_id in processed_images_storage and "processed_image_filename" in processed_images_storage[image_id]:
+        processed_filename = processed_images_storage[image_id]["processed_image_filename"]
+        if processed_filename:
+            potential_path = os.path.join(uploads_dir, processed_filename)
+            if os.path.exists(potential_path):
+                processed_image_path = potential_path
     
     # 処理済み画像がない場合は元画像を使用
     image_path = None
-    if not processed_image_data:
-        # 画像ファイルのパスを構築
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-        uploads_dir = os.path.join(project_root, "uploads")
+    if not processed_image_path:
         
         # 対応する画像ファイルを検索
         allowed_extensions = ['jpg', 'jpeg', 'png', 'bmp']
@@ -69,10 +74,10 @@ async def extract_auto_features(request: AutoFeatureExtractionRequest) -> AutoFe
                 detail=f"無効なパラメータ: {', '.join(validation_result['errors'])}"
             )
         
-        # 自動特徴点抽出を実行（処理済み画像を優先使用）
-        if processed_image_data:
+        # 自動特徴点抽出を実行（処理済み画像ファイルを優先使用）
+        if processed_image_path:
             result = auto_feature_service.extract_auto_features(
-                image_data=processed_image_data,
+                image_path=processed_image_path,
                 feature_types=request.feature_types,
                 points_per_type=request.points_per_type,
                 confidence_threshold=request.confidence_threshold

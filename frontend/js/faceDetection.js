@@ -35,11 +35,18 @@ async function processFaceDetection() {
             const result = await response.json();
             detectionResults[imageType] = result;
             
-            if (result.success && result.processed_image) {
-                // 処理済み画像を表示
-                displayProcessedImage(imageType, result.processed_image);
+            if (result.success && (result.processed_image || result.processed_image_url)) {
+                // 処理済み画像を表示（URLを優先使用）
+                if (result.processed_image_url) {
+                    displayProcessedImageFromUrl(imageType, result.processed_image_url);
+                } else {
+                    displayProcessedImage(imageType, result.processed_image);
+                }
+                
                 imageData[imageType].processed = true;
                 imageData[imageType].processedImage = result.processed_image;
+                imageData[imageType].processedImageUrl = result.processed_image_url;
+                imageData[imageType].processedImageId = result.processed_image_id;
                 
                 // 顔検出結果を保存
                 faceDetectionResults[imageType] = result;
@@ -93,6 +100,37 @@ function displayProcessedImage(imageType, base64Image) {
         };
         
         img.src = base64Image;
+    }
+}
+
+// 処理済み画像をURLから表示
+function displayProcessedImageFromUrl(imageType, imageUrl) {
+    const canvas = document.getElementById(`processed-canvas-${imageType}`);
+    
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = function() {
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            ctx.drawImage(img, 0, 0);
+            canvas.style.display = 'block';
+            
+            // 既存の特徴点を再描画
+            redrawFeaturePoints(imageType, true);
+            
+            // 処理済み画像のキャンバスにイベントリスナーを追加（重複防止）
+            if (!canvas.hasProcessedClickListener) {
+                canvas.addEventListener('mousedown', (e) => handleProcessedCanvasMouseDown(e, imageType));
+                canvas.addEventListener('mousemove', (e) => handleProcessedCanvasMouseMove(e, imageType));
+                canvas.addEventListener('mouseup', (e) => handleProcessedCanvasMouseUp(e, imageType));
+                canvas.addEventListener('contextmenu', (e) => handleProcessedCanvasRightClick(e, imageType));
+                canvas.hasProcessedClickListener = true;
+            }
+        };
+        
+        img.src = imageUrl;
     }
 }
 

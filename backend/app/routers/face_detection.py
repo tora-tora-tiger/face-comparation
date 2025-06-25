@@ -47,13 +47,16 @@ async def detect_and_process_face(request: FaceDetectionRequest) -> FaceDetectio
         )
     
     try:
-        # 顔検出・処理を実行
-        result = face_detection_service.detect_and_process_face(image_path)
+        # 顔検出・処理を実行（uploads_dirを渡す）
+        result = face_detection_service.detect_and_process_face(image_path, uploads_dir)
         
-        # 処理済み画像をストレージに保存
-        if result["success"] and result["processed_image"]:
+        # 処理済み画像情報をストレージに保存
+        if result["success"] and result["processed_image_id"]:
             processed_images_storage[image_id] = {
-                "processed_image": result["processed_image"],
+                "processed_image": result["processed_image"],  # 後方互換性のため残す
+                "processed_image_id": result["processed_image_id"],
+                "processed_image_filename": result["processed_image_filename"],
+                "processed_image_url": result["processed_image_url"],
                 "face_landmarks": result["face_landmarks"],
                 "processing_info": result["processing_info"]
             }

@@ -4,6 +4,8 @@ import mediapipe as mp
 from PIL import Image
 import io
 import base64
+import os
+import uuid
 from typing import Tuple, Optional, Dict, Any
 
 class FaceDetectionService:
@@ -30,7 +32,7 @@ class FaceDetectionService:
             min_tracking_confidence=0.5
         )
     
-    def detect_and_process_face(self, image_path: str) -> Dict[str, Any]:
+    def detect_and_process_face(self, image_path: str, uploads_dir: str = None) -> Dict[str, Any]:
         """
         顔を検出し、トリミング・正面化処理を行う
         
@@ -87,11 +89,29 @@ class FaceDetectionService:
                     aligned_face.shape
                 )
             
+            # 処理済み画像をファイルに保存
+            processed_image_filename = None
+            processed_image_url = None
+            if uploads_dir:
+                # ユニークなファイル名を生成
+                processed_image_id = str(uuid.uuid4())
+                processed_image_filename = f"processed_{processed_image_id}.jpg"
+                processed_image_path = os.path.join(uploads_dir, processed_image_filename)
+                
+                # 画像を保存
+                cv2.imwrite(processed_image_path, aligned_face)
+                
+                # URLパスを生成
+                processed_image_url = f"/uploads/{processed_image_filename}"
+            
             return {
                 "success": True,
                 "message": "顔の検出・処理が完了しました",
                 "original_image": self._image_to_base64(image),
-                "processed_image": self._image_to_base64(aligned_face),
+                "processed_image": self._image_to_base64(aligned_face),  # 後方互換性のため残す
+                "processed_image_id": processed_image_id if uploads_dir else None,
+                "processed_image_filename": processed_image_filename,
+                "processed_image_url": processed_image_url,
                 "face_bbox": face_bbox,
                 "face_landmarks": landmarks_data,
                 "processing_info": {

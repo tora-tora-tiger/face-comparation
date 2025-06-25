@@ -131,7 +131,12 @@ class AutoFeatureExtractionService:
 # インメモリストレージ（開発用）
 uploaded_images = {}      # アップロード画像情報
 feature_points_storage = {} # 特徴点データ
-face_detection_results = {} # 顔検出結果
+processed_images_storage = {} # 処理済み画像情報
+
+# ファイルストレージ
+uploads/                  # 元画像と処理済み画像を保存
+  ├── {image_id}.jpg     # 元画像
+  └── processed_{id}.jpg # 処理済み画像
 ```
 
 ## フロントエンド構成（JavaScript）
