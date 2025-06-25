@@ -200,6 +200,9 @@ Body:
   "confidence_threshold": 0.5
 }
 
+注意: このAPIは処理済み画像（顔検出・正面化後）を優先的に使用します。
+処理済み画像が存在しない場合のみ元画像を使用します。
+
 Response:
 {
   "success": true,

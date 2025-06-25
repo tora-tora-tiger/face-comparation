@@ -207,29 +207,29 @@ function addFeaturePoint(x, y, imageType) {
 #### 自動特徴点抽出フロー
 ```javascript
 async function extractAutoFeatures() {
-    const params = getAutoFeatureParams();
+    // 1. 処理済み画像の確認
+    const processedImageTypes = ['reference', 'compare1', 'compare2'].filter(
+        imageType => imageData[imageType].processedImage
+    );
     
-    // 1. パラメータ検証
+    if (processedImageTypes.length === 0) {
+        alert('自動特徴点抽出を実行するには、まず顔検出・正面化処理を実行してください。');
+        return;
+    }
+    
+    // 2. パラメータ検証
+    const params = getAutoFeatureParams();
     const validation = await validateExtractionParameters(params);
     if (!validation.valid) {
         displayErrors(validation.errors);
         return;
     }
     
-    // 2. 3つの画像に対して並列実行
-    const promises = Object.keys(imageData).map(async (imageType) => {
-        if (imageData[imageType].processed) {
-            return extractFeaturesForImage(imageType, params);
-        }
-    });
-    
-    const results = await Promise.all(promises);
-    
-    // 3. 結果をCanvasに描画
-    results.forEach((result, index) => {
-        const imageType = Object.keys(imageData)[index];
+    // 3. 処理済み画像のみに対して実行
+    for (const imageType of processedImageTypes) {
+        const result = await extractFeaturesForImage(imageType, params);
         displayAutoFeatures(result.features, imageType);
-    });
+    }
 }
 
 async function extractFeaturesForImage(imageType, params) {
@@ -251,11 +251,19 @@ async function extractFeaturesForImage(imageType, params) {
 #### MediaPipe処理（バックエンド）
 ```python
 class AutoFeatureExtractionService:
-    def extract_auto_features(self, image_id: str, params: dict):
-        # 1. 画像読み込み
-        image_path = f"uploads/{uploaded_images[image_id]['filename']}"
-        image = cv2.imread(image_path)
-        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    def extract_auto_features(self, image_path=None, image_data=None, params=None):
+        # 1. 画像読み込み（処理済み画像を優先）
+        if image_data:
+            # Base64データから画像を復元（正面化後の画像）
+            image_bytes = base64.b64decode(image_data)
+            pil_image = Image.open(BytesIO(image_bytes))
+            rgb_image = np.array(pil_image)
+        elif image_path:
+            # ファイルパスから読み込み（元画像）
+            image = cv2.imread(image_path)
+            rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        else:
+            raise ValueError("画像パスまたは画像データが必要です")
         
         # 2. MediaPipe処理
         results = self.face_mesh.process(rgb_image)
@@ -281,8 +289,8 @@ class AutoFeatureExtractionService:
             # 6. 座標変換（正規化座標 → ピクセル座標）
             for i, point in enumerate(selected_points):
                 extracted_points.append({
-                    "x": point.x * image.shape[1],
-                    "y": point.y * image.shape[0],
+                    "x": point.x * rgb_image.shape[1],
+                    "y": point.y * rgb_image.shape[0],
                     "type": feature_type,
                     "label": f"{self.get_type_label(feature_type)}_{i+1}",
                     "confidence": self.calculate_confidence(point),
@@ -292,7 +300,7 @@ class AutoFeatureExtractionService:
         return {"features": extracted_points}
 ```
 
-**データ変換**: `Image` → `MediaPipe Landmarks` → `Normalized Coordinates` → `Pixel Coordinates` → `Feature Points`
+**データ変換**: `Processed Image (Base64)` → `PIL Image` → `NumPy Array` → `MediaPipe Landmarks` → `Normalized Coordinates` → `Pixel Coordinates` → `Feature Points`
 
 ### 4. 比較処理フロー
 

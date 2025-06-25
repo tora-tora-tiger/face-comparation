@@ -31,7 +31,8 @@ class AutoFeatureExtractionService:
     
     def extract_auto_features(
         self, 
-        image_path: str, 
+        image_path: str = None,
+        image_data: str = None,
         feature_types: List[str] = None,
         points_per_type: Dict[str, int] = None,
         confidence_threshold: float = 0.5
@@ -40,7 +41,8 @@ class AutoFeatureExtractionService:
         画像から自動で特徴点を抽出する
         
         Args:
-            image_path: 画像ファイルのパス
+            image_path: 画像ファイルのパス（元画像用）
+            image_data: Base64エンコードされた画像データ（処理済み画像用）
             feature_types: 抽出する特徴点のタイプリスト
             points_per_type: 各特徴点タイプごとの点数
             confidence_threshold: 検出信頼度の閾値
@@ -63,17 +65,48 @@ class AutoFeatureExtractionService:
             }
         
         try:
-            # 画像を読み込み
-            image = cv2.imread(image_path)
-            if image is None:
+            # 画像を読み込み（パスまたはBase64データから）
+            if image_data:
+                # Base64データから画像を復元
+                try:
+                    image_bytes = base64.b64decode(image_data)
+                    pil_image = Image.open(BytesIO(image_bytes))
+                    # PIL→OpenCV形式に変換
+                    rgb_image = np.array(pil_image)
+                    # RGB→BGR変換（OpenCV用）
+                    if len(rgb_image.shape) == 3 and rgb_image.shape[2] == 3:
+                        image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
+                    else:
+                        image = rgb_image
+                except Exception as e:
+                    return {
+                        'success': False,
+                        'message': f'Base64画像データの読み込みに失敗しました: {str(e)}',
+                        'feature_points': []
+                    }
+            elif image_path:
+                # ファイルパスから画像を読み込み
+                image = cv2.imread(image_path)
+                if image is None:
+                    return {
+                        'success': False,
+                        'message': f'画像の読み込みに失敗しました: {image_path}',
+                        'feature_points': []
+                    }
+                # RGB変換
+                rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            else:
                 return {
                     'success': False,
-                    'message': f'画像の読み込みに失敗しました: {image_path}',
+                    'message': '画像パスまたは画像データが指定されていません',
                     'feature_points': []
                 }
             
-            # RGB変換
-            rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            # RGB画像が既に準備済みでない場合は変換
+            if image_data and 'rgb_image' not in locals():
+                rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            elif not image_data:
+                rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             
             # MediaPipeで顔ランドマークを検出
             results = self.face_mesh.process(rgb_image)

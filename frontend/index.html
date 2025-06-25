@@ -1,276 +1,276 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>顔認証システム - Face Recognition System</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>顔認証システム - Face Recognition System</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>顔認証システム</h1>
-            <p>画像をアップロードし、特徴点をマーキングして顔の類似度を比較します</p>
-        </header>
-
-        <main>
-            <!-- 画像アップロードセクション -->
-            <section class="upload-section">
-                <h2>1. 画像をアップロード</h2>
-                <div class="upload-grid">
-                    <div class="upload-item">
-                        <h3>基準画像</h3>
-                        <div class="upload-area" id="upload-area-reference">
-                            <input type="file" id="file-reference" accept="image/*" style="display: none;">
-                            <div class="upload-placeholder" onclick="document.getElementById('file-reference').click()">
-                                <p>クリックまたはドロップして画像を選択</p>
-                            </div>
-                        </div>
-                        <canvas id="canvas-reference" style="display: none;"></canvas>
-                    </div>
-                    
-                    <div class="upload-item">
-                        <h3>比較画像1</h3>
-                        <div class="upload-area" id="upload-area-compare1">
-                            <input type="file" id="file-compare1" accept="image/*" style="display: none;">
-                            <div class="upload-placeholder" onclick="document.getElementById('file-compare1').click()">
-                                <p>クリックまたはドロップして画像を選択</p>
-                            </div>
-                        </div>
-                        <canvas id="canvas-compare1" style="display: none;"></canvas>
-                    </div>
-                    
-                    <div class="upload-item">
-                        <h3>比較画像2</h3>
-                        <div class="upload-area" id="upload-area-compare2">
-                            <input type="file" id="file-compare2" accept="image/*" style="display: none;">
-                            <div class="upload-placeholder" onclick="document.getElementById('file-compare2').click()">
-                                <p>クリックまたはドロップして画像を選択</p>
-                            </div>
-                        </div>
-                        <canvas id="canvas-compare2" style="display: none;"></canvas>
-                    </div>
+  <div class="container">
+    <header>
+      <h1>顔認証システム</h1>
+      <p>画像をアップロードし、特徴点をマーキングして顔の類似度を比較します</p>
+    </header>
+    
+    <main>
+      <!-- 画像アップロードセクション -->
+      <section class="upload-section">
+        <h2>1. 画像をアップロード</h2>
+        <div class="upload-grid">
+          <div class="upload-item">
+            <h3>基準画像</h3>
+            <div class="upload-area" id="upload-area-reference">
+              <input type="file" id="file-reference" accept="image/*" style="display: none;">
+              <div class="upload-placeholder" onclick="document.getElementById('file-reference').click()">
+                <p>クリックまたはドロップして画像を選択</p>
+              </div>
+            </div>
+            <canvas id="canvas-reference" style="display: none;"></canvas>
+          </div>
+          
+          <div class="upload-item">
+            <h3>比較画像1</h3>
+            <div class="upload-area" id="upload-area-compare1">
+              <input type="file" id="file-compare1" accept="image/*" style="display: none;">
+              <div class="upload-placeholder" onclick="document.getElementById('file-compare1').click()">
+                <p>クリックまたはドロップして画像を選択</p>
+              </div>
+            </div>
+            <canvas id="canvas-compare1" style="display: none;"></canvas>
+          </div>
+          
+          <div class="upload-item">
+            <h3>比較画像2</h3>
+            <div class="upload-area" id="upload-area-compare2">
+              <input type="file" id="file-compare2" accept="image/*" style="display: none;">
+              <div class="upload-placeholder" onclick="document.getElementById('file-compare2').click()">
+                <p>クリックまたはドロップして画像を選択</p>
+              </div>
+            </div>
+            <canvas id="canvas-compare2" style="display: none;"></canvas>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 顔検出・正面化セクション -->
+      <section class="face-detection-section">
+        <h2>2. 顔検出・正面化処理</h2>
+        <div class="face-detection-controls">
+          <p>アップロードした画像から顔を検出し、トリミング・正面化処理を行います。</p>
+          <button id="process-faces" class="btn btn-primary" disabled>顔を検出・処理</button>
+          <div id="face-processing-loading" style="display: none;">
+            <p>顔検出処理中...</p>
+          </div>
+        </div>
+        
+        <!-- 処理結果表示エリア -->
+        <div class="processed-images-grid" id="processed-images-grid" style="display: none;">
+          <div class="processed-image-item">
+            <h4>基準画像（処理後）</h4>
+            <div class="processed-image-container">
+              <canvas id="processed-canvas-reference" style="display: none;"></canvas>
+            </div>
+          </div>
+          
+          <div class="processed-image-item">
+            <h4>比較画像1（処理後）</h4>
+            <div class="processed-image-container">
+              <canvas id="processed-canvas-compare1" style="display: none;"></canvas>
+            </div>
+          </div>
+          
+          <div class="processed-image-item">
+            <h4>比較画像2（処理後）</h4>
+            <div class="processed-image-container">
+              <canvas id="processed-canvas-compare2" style="display: none;"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 検出情報表示 -->
+        <div class="detection-info" id="detection-info" style="display: none;">
+          <h4>検出情報</h4>
+          <div id="detection-details"></div>
+        </div>
+      </section>
+      
+      <!-- 特徴点マーキングセクション -->
+      <section class="marking-section">
+        <h2>3. 特徴点をマーキング</h2>
+        
+        <!-- モード選択 -->
+        <div class="mode-selection">
+          <h3>マーキングモード</h3>
+          <div class="mode-options">
+            <label class="mode-option">
+              <input type="radio" name="marking-mode" value="manual" checked>
+              <span>手動モード</span>
+            </label>
+            <label class="mode-option">
+              <input type="radio" name="marking-mode" value="auto">
+              <span>自動モード</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- 手動モード設定 -->
+        <div id="manual-mode-settings" class="mode-settings">
+          <div class="marking-controls">
+            <div class="feature-type-selector">
+              <label>特徴点タイプ:</label>
+              <select id="feature-type">
+                <option value="rightEye">右目</option>
+                <option value="leftEye">左目</option>
+                <option value="nose">鼻</option>
+                <option value="mouth">口</option>
+                <option value="face_contour">輪郭</option>
+                <option value="other">その他</option>
+              </select>
+            </div>
+            <button id="clear-points" class="btn btn-secondary">特徴点をクリア</button>
+          </div>
+        </div>
+        
+        <!-- 自動モード設定 -->
+        <div id="auto-mode-settings" class="mode-settings" style="display: none;">
+          <div class="auto-controls">
+            <div class="auto-parameters">
+              <h4>自動抽出パラメータ</h4>
+              
+              <div class="parameter-group">
+                <label>抽出する特徴点タイプ:</label>
+                <div class="feature-checkboxes">
+                  <label><input type="checkbox" value="rightEye" checked> 右目</label>
+                  <label><input type="checkbox" value="leftEye" checked> 左目</label>
+                  <label><input type="checkbox" value="nose" checked> 鼻</label>
+                  <label><input type="checkbox" value="mouth" checked> 口</label>
+                  <label><input type="checkbox" value="face_contour"> 輪郭</label>
                 </div>
-            </section>
-
-            <!-- 顔検出・正面化セクション -->
-            <section class="face-detection-section">
-                <h2>2. 顔検出・正面化処理</h2>
-                <div class="face-detection-controls">
-                    <p>アップロードした画像から顔を検出し、トリミング・正面化処理を行います。</p>
-                    <button id="process-faces" class="btn btn-primary" disabled>顔を検出・処理</button>
-                    <div id="face-processing-loading" style="display: none;">
-                        <p>顔検出処理中...</p>
-                    </div>
+              </div>
+              
+              <div class="parameter-group">
+                <label>各部位の点数:</label>
+                <div class="points-settings">
+                  <div class="point-setting">
+                    <span>右目:</span>
+                    <input type="number" id="points-rightEye" min="1" max="16" value="4">
+                  </div>
+                  <div class="point-setting">
+                    <span>左目:</span>
+                    <input type="number" id="points-leftEye" min="1" max="16" value="4">
+                  </div>
+                  <div class="point-setting">
+                    <span>鼻:</span>
+                    <input type="number" id="points-nose" min="1" max="10" value="3">
+                  </div>
+                  <div class="point-setting">
+                    <span>口:</span>
+                    <input type="number" id="points-mouth" min="1" max="12" value="4">
+                  </div>
+                  <div class="point-setting">
+                    <span>輪郭:</span>
+                    <input type="number" id="points-face_contour" min="1" max="36" value="8">
+                  </div>
                 </div>
-                
-                <!-- 処理結果表示エリア -->
-                <div class="processed-images-grid" id="processed-images-grid" style="display: none;">
-                    <div class="processed-image-item">
-                        <h4>基準画像（処理後）</h4>
-                        <div class="processed-image-container">
-                            <canvas id="processed-canvas-reference" style="display: none;"></canvas>
-                        </div>
-                    </div>
-                    
-                    <div class="processed-image-item">
-                        <h4>比較画像1（処理後）</h4>
-                        <div class="processed-image-container">
-                            <canvas id="processed-canvas-compare1" style="display: none;"></canvas>
-                        </div>
-                    </div>
-                    
-                    <div class="processed-image-item">
-                        <h4>比較画像2（処理後）</h4>
-                        <div class="processed-image-container">
-                            <canvas id="processed-canvas-compare2" style="display: none;"></canvas>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 検出情報表示 -->
-                <div class="detection-info" id="detection-info" style="display: none;">
-                    <h4>検出情報</h4>
-                    <div id="detection-details"></div>
-                </div>
-            </section>
-
-            <!-- 特徴点マーキングセクション -->
-            <section class="marking-section">
-                <h2>3. 特徴点をマーキング</h2>
-                
-                <!-- モード選択 -->
-                <div class="mode-selection">
-                    <h3>マーキングモード</h3>
-                    <div class="mode-options">
-                        <label class="mode-option">
-                            <input type="radio" name="marking-mode" value="manual" checked>
-                            <span>手動モード</span>
-                        </label>
-                        <label class="mode-option">
-                            <input type="radio" name="marking-mode" value="auto">
-                            <span>自動モード</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- 手動モード設定 -->
-                <div id="manual-mode-settings" class="mode-settings">
-                    <div class="marking-controls">
-                        <div class="feature-type-selector">
-                            <label>特徴点タイプ:</label>
-                            <select id="feature-type">
-                                <option value="rightEye">右目</option>
-                                <option value="leftEye">左目</option>
-                                <option value="nose">鼻</option>
-                                <option value="mouth">口</option>
-                                <option value="face_contour">輪郭</option>
-                                <option value="other">その他</option>
-                            </select>
-                        </div>
-                        <button id="clear-points" class="btn btn-secondary">特徴点をクリア</button>
-                    </div>
-                </div>
-
-                <!-- 自動モード設定 -->
-                <div id="auto-mode-settings" class="mode-settings" style="display: none;">
-                    <div class="auto-controls">
-                        <div class="auto-parameters">
-                            <h4>自動抽出パラメータ</h4>
-                            
-                            <div class="parameter-group">
-                                <label>抽出する特徴点タイプ:</label>
-                                <div class="feature-checkboxes">
-                                    <label><input type="checkbox" value="rightEye" checked> 右目</label>
-                                    <label><input type="checkbox" value="leftEye" checked> 左目</label>
-                                    <label><input type="checkbox" value="nose" checked> 鼻</label>
-                                    <label><input type="checkbox" value="mouth" checked> 口</label>
-                                    <label><input type="checkbox" value="face_contour"> 輪郭</label>
-                                </div>
-                            </div>
-
-                            <div class="parameter-group">
-                                <label>各部位の点数:</label>
-                                <div class="points-settings">
-                                    <div class="point-setting">
-                                        <span>右目:</span>
-                                        <input type="number" id="points-rightEye" min="1" max="16" value="4">
-                                    </div>
-                                    <div class="point-setting">
-                                        <span>左目:</span>
-                                        <input type="number" id="points-leftEye" min="1" max="16" value="4">
-                                    </div>
-                                    <div class="point-setting">
-                                        <span>鼻:</span>
-                                        <input type="number" id="points-nose" min="1" max="10" value="3">
-                                    </div>
-                                    <div class="point-setting">
-                                        <span>口:</span>
-                                        <input type="number" id="points-mouth" min="1" max="12" value="4">
-                                    </div>
-                                    <div class="point-setting">
-                                        <span>輪郭:</span>
-                                        <input type="number" id="points-face_contour" min="1" max="36" value="8">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="parameter-group">
-                                <label>信頼度しきい値:</label>
-                                <input type="range" id="confidence-threshold" min="0" max="1" step="0.1" value="0.5">
-                                <span id="confidence-value">0.5</span>
-                            </div>
-                        </div>
-
-                        <div class="auto-actions">
-                            <button id="extract-auto-features" class="btn btn-primary">自動特徴点抽出</button>
-                            <button id="clear-auto-features" class="btn btn-secondary">自動特徴点をクリア</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="marking-instructions">
-                    <h4>操作方法</h4>
-                    <p><strong>※ 特徴点は顔検出・処理後の画像でのみマーキング可能です</strong></p>
-                    <ul>
-                        <li><strong>左クリック:</strong> 新しい特徴点を追加</li>
-                        <li><strong>ドラッグ:</strong> 特徴点を移動（特徴点をクリックしてドラッグ）</li>
-                        <li><strong>右クリック:</strong> 特徴点を削除</li>
-                    </ul>
-                </div>
-                
-                <div class="feature-points-info">
-                    <div class="points-count">
-                        <span>基準画像: <span id="points-count-reference">0</span>点</span>
-                        <span>比較画像1: <span id="points-count-compare1">0</span>点</span>
-                        <span>比較画像2: <span id="points-count-compare2">0</span>点</span>
-                    </div>
-                </div>
-
-                <!-- 特徴点統計表示 -->
-                <div id="feature-point-statistics" class="feature-point-statistics" style="display: none;">
-                    <h4>特徴点統計</h4>
-                    <div id="statistics-content" class="statistics-content">
-                        <!-- 統計情報がここに表示される -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- 比較実行セクション -->
-            <section class="comparison-section">
-                <h2>4. 比較実行</h2>
-                <button id="execute-comparison" class="btn btn-primary" disabled>比較を実行</button>
-                <div id="loading" style="display: none;">
-                    <p>計算中...</p>
-                </div>
-            </section>
-
-            <!-- 結果表示セクション -->
-            <section class="results-section">
-                <h2>5. 結果</h2>
-                <div id="comparison-results" style="display: none;">
-                    <div class="result-summary">
-                        <h3>比較結果</h3>
-                        <div class="winner" id="result-winner"></div>
-                    </div>
-                    
-                    <div class="result-details">
-                        <div class="result-item">
-                            <h4>比較画像1</h4>
-                            <div class="score-info">
-                                <span>距離スコア: <span id="score1"></span></span>
-                                <span>最適λ値: <span id="lambda1"></span></span>
-                            </div>
-                        </div>
-                        
-                        <div class="result-item">
-                            <h4>比較画像2</h4>
-                            <div class="score-info">
-                                <span>距離スコア: <span id="score2"></span></span>
-                                <span>最適λ値: <span id="lambda2"></span></span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="result-metadata">
-                        <h4>詳細情報</h4>
-                        <div id="result-metadata-content"></div>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- モジュール化されたJavaScriptファイル -->
-    <script src="/static/js/globals.js"></script>
-    <script src="/static/js/utils.js"></script>
-    <script src="/static/js/imageUpload.js"></script>
-    <script src="/static/js/featurePoints.js"></script>
-    <script src="/static/js/featurePointEditor.js"></script>
-    <script src="/static/js/faceDetection.js"></script>
-    <script src="/static/js/autoFeatures.js"></script>
-    <script src="/static/js/comparison.js"></script>
-    <script src="/static/js/eventListeners.js"></script>
-    <script src="/static/js/app.js"></script>
+              </div>
+              
+              <div class="parameter-group">
+                <label>信頼度しきい値:</label>
+                <input type="range" id="confidence-threshold" min="0" max="1" step="0.1" value="0.5">
+                <span id="confidence-value">0.5</span>
+              </div>
+            </div>
+            
+            <div class="auto-actions">
+              <button id="extract-auto-features" class="btn btn-primary">自動特徴点抽出</button>
+              <button id="clear-auto-features" class="btn btn-secondary">自動特徴点をクリア</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="marking-instructions">
+          <h4>操作方法</h4>
+          <p><strong>※ 特徴点は顔検出・処理後の画像でのみマーキング可能です</strong></p>
+          <ul>
+            <li><strong>左クリック:</strong> 新しい特徴点を追加</li>
+            <li><strong>ドラッグ:</strong> 特徴点を移動（特徴点をクリックしてドラッグ）</li>
+            <li><strong>右クリック:</strong> 特徴点を削除</li>
+          </ul>
+        </div>
+        
+        <div class="feature-points-info">
+          <div class="points-count">
+            <span>基準画像: <span id="points-count-reference">0</span>点</span>
+            <span>比較画像1: <span id="points-count-compare1">0</span>点</span>
+            <span>比較画像2: <span id="points-count-compare2">0</span>点</span>
+          </div>
+        </div>
+        
+        <!-- 特徴点統計表示 -->
+        <div id="feature-point-statistics" class="feature-point-statistics" style="display: none;">
+          <h4>特徴点統計</h4>
+          <div id="statistics-content" class="statistics-content">
+            <!-- 統計情報がここに表示される -->
+          </div>
+        </div>
+      </section>
+      
+      <!-- 比較実行セクション -->
+      <section class="comparison-section">
+        <h2>4. 比較実行</h2>
+        <button id="execute-comparison" class="btn btn-primary" disabled>比較を実行</button>
+        <div id="loading" style="display: none;">
+          <p>計算中...</p>
+        </div>
+      </section>
+      
+      <!-- 結果表示セクション -->
+      <section class="results-section">
+        <h2>5. 結果</h2>
+        <div id="comparison-results" style="display: none;">
+          <div class="result-summary">
+            <h3>比較結果</h3>
+            <div class="winner" id="result-winner"></div>
+          </div>
+          
+          <div class="result-details">
+            <div class="result-item">
+              <h4>比較画像1</h4>
+              <div class="score-info">
+                <span>距離スコア: <span id="score1"></span></span>
+                <span>最適λ値: <span id="lambda1"></span></span>
+              </div>
+            </div>
+            
+            <div class="result-item">
+              <h4>比較画像2</h4>
+              <div class="score-info">
+                <span>距離スコア: <span id="score2"></span></span>
+                <span>最適λ値: <span id="lambda2"></span></span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="result-metadata">
+            <h4>詳細情報</h4>
+            <div id="result-metadata-content"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  
+  <!-- モジュール化されたJavaScriptファイル -->
+  <script src="/static/js/globals.js"></script>
+  <script src="/static/js/utils.js"></script>
+  <script src="/static/js/imageUpload.js"></script>
+  <script src="/static/js/featurePoints.js"></script>
+  <script src="/static/js/featurePointEditor.js"></script>
+  <script src="/static/js/faceDetection.js"></script>
+  <script src="/static/js/autoFeatures.js"></script>
+  <script src="/static/js/comparison.js"></script>
+  <script src="/static/js/eventListeners.js"></script>
+  <script src="/static/js/app.js"></script>
 </body>
 </html>

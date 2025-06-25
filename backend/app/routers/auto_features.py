@@ -10,6 +10,7 @@ from app.models import (
 )
 from app.services.auto_feature_extraction import AutoFeatureExtractionService
 from app.routers.images import feature_points_storage
+from app.routers.face_detection import processed_images_storage
 
 router = APIRouter()
 auto_feature_service = AutoFeatureExtractionService()
@@ -28,25 +29,32 @@ async def extract_auto_features(request: AutoFeatureExtractionRequest) -> AutoFe
     
     image_id = request.image_id
     
-    # 画像ファイルのパスを構築
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-    uploads_dir = os.path.join(project_root, "uploads")
+    # まず処理済み画像を確認
+    processed_image_data = None
+    if image_id in processed_images_storage:
+        processed_image_data = processed_images_storage[image_id]["processed_image"]
     
-    # 対応する画像ファイルを検索
+    # 処理済み画像がない場合は元画像を使用
     image_path = None
-    allowed_extensions = ['jpg', 'jpeg', 'png', 'bmp']
-    
-    for ext in allowed_extensions:
-        potential_path = os.path.join(uploads_dir, f"{image_id}.{ext}")
-        if os.path.exists(potential_path):
-            image_path = potential_path
-            break
-    
-    if not image_path:
-        raise HTTPException(
-            status_code=404,
-            detail=f"画像が見つかりません: {image_id}"
-        )
+    if not processed_image_data:
+        # 画像ファイルのパスを構築
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        uploads_dir = os.path.join(project_root, "uploads")
+        
+        # 対応する画像ファイルを検索
+        allowed_extensions = ['jpg', 'jpeg', 'png', 'bmp']
+        
+        for ext in allowed_extensions:
+            potential_path = os.path.join(uploads_dir, f"{image_id}.{ext}")
+            if os.path.exists(potential_path):
+                image_path = potential_path
+                break
+        
+        if not image_path:
+            raise HTTPException(
+                status_code=404,
+                detail=f"画像が見つかりません（元画像・処理済み画像ともに存在しません）: {image_id}"
+            )
     
     try:
         # パラメータの妥当性をチェック
@@ -61,13 +69,21 @@ async def extract_auto_features(request: AutoFeatureExtractionRequest) -> AutoFe
                 detail=f"無効なパラメータ: {', '.join(validation_result['errors'])}"
             )
         
-        # 自動特徴点抽出を実行
-        result = auto_feature_service.extract_auto_features(
-            image_path=image_path,
-            feature_types=request.feature_types,
-            points_per_type=request.points_per_type,
-            confidence_threshold=request.confidence_threshold
-        )
+        # 自動特徴点抽出を実行（処理済み画像を優先使用）
+        if processed_image_data:
+            result = auto_feature_service.extract_auto_features(
+                image_data=processed_image_data,
+                feature_types=request.feature_types,
+                points_per_type=request.points_per_type,
+                confidence_threshold=request.confidence_threshold
+            )
+        else:
+            result = auto_feature_service.extract_auto_features(
+                image_path=image_path,
+                feature_types=request.feature_types,
+                points_per_type=request.points_per_type,
+                confidence_threshold=request.confidence_threshold
+            )
         
         # 抽出した特徴点をストレージに保存（手動特徴点と統合）
         if result["success"] and result["feature_points"]:
